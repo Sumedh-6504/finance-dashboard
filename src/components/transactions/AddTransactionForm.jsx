@@ -1,21 +1,23 @@
 import React, { useState, useEffect } from "react";
 import { useApp } from "../../context/AppContext";
 import { CATEGORIES } from "../../data/mockData";
-import { X } from "lucide-react";
+import { X, ShieldCheck } from "lucide-react";
 
-const EXPENSE_CATEGORIES = CATEGORIES.filter((c) => c !== "All" && c !== "Salary" && c !== "Freelance" && c !== "Investment");
-const INCOME_CATEGORIES = ["Salary", "Freelance", "Investment"];
+const EXPENSE_CATEGORIES = CATEGORIES.filter(
+  (c) => c !== "All" && c !== "Client Revenue" && c !== "Investment"
+);
+const INCOME_CATEGORIES = ["Client Revenue", "Investment"];
 
 const defaultForm = {
   description: "",
   amount: "",
-  category: "Groceries",
+  category: "Payroll",
   type: "expense",
   date: new Date().toISOString().split("T")[0],
 };
 
 export default function AddTransactionForm({ editingTransaction, onClose }) {
-  const { dispatch, state } = useApp();
+  const { dispatch } = useApp();
   const isEdit = !!editingTransaction;
 
   const [form, setForm] = useState(defaultForm);
@@ -48,17 +50,14 @@ export default function AddTransactionForm({ editingTransaction, onClose }) {
     const e = {};
     if (!form.description.trim()) e.description = "Description is required";
     if (!form.amount || isNaN(Number(form.amount)) || Number(form.amount) <= 0)
-      e.amount = "Enter a valid amount";
+      e.amount = "Enter a valid USD amount";
     if (!form.date) e.date = "Date is required";
     return e;
   };
 
   const handleSubmit = () => {
     const e = validate();
-    if (Object.keys(e).length > 0) {
-      setErrors(e);
-      return;
-    }
+    if (Object.keys(e).length > 0) { setErrors(e); return; }
 
     const payload = {
       id: isEdit ? editingTransaction.id : Date.now(),
@@ -74,25 +73,31 @@ export default function AddTransactionForm({ editingTransaction, onClose }) {
   };
 
   const inputCls = (field) =>
-    `w-full px-3 py-2 text-sm rounded-lg border ${
-      errors[field]
-        ? "border-rose-400 focus:ring-rose-400"
-        : "border-gray-200 dark:border-gray-600 focus:ring-brand-500"
-    } bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:border-transparent`;
+    `form-input ${errors[field] ? "!border-rose-400 !focus:ring-rose-400" : ""}`;
 
   return (
-    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md">
+    <div
+      className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div className="bg-white dark:bg-surface-800 rounded-2xl shadow-2xl w-full max-w-md animate-slide-up
+                      border border-gray-100 dark:border-white/5">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-          <h2 className="font-semibold text-gray-700 dark:text-gray-200">
-            {isEdit ? "Edit Transaction" : "Add Transaction"}
-          </h2>
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-white/5">
+          <div className="flex items-center gap-2.5">
+            <div className="p-1.5 rounded-lg bg-brand-100 dark:bg-brand-900/30">
+              <ShieldCheck size={14} className="text-brand-600 dark:text-brand-400" />
+            </div>
+            <h2 className="font-semibold text-gray-800 dark:text-gray-100">
+              {isEdit ? "Edit Payment Record" : "New Payment Entry"}
+            </h2>
+          </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+            className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-200
+                       hover:bg-gray-100 dark:hover:bg-white/5 transition-colors"
           >
-            <X size={18} />
+            <X size={16} />
           </button>
         </div>
 
@@ -100,23 +105,23 @@ export default function AddTransactionForm({ editingTransaction, onClose }) {
         <div className="px-6 py-5 space-y-4">
           {/* Type toggle */}
           <div>
-            <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5 uppercase tracking-wider">
-              Type
+            <label className="block text-[10px] font-semibold text-gray-400 dark:text-gray-500 mb-2 uppercase tracking-widest">
+              Direction
             </label>
-            <div className="flex rounded-lg border border-gray-200 dark:border-gray-600 overflow-hidden">
+            <div className="flex rounded-xl border border-gray-200 dark:border-white/10 overflow-hidden">
               {["expense", "income"].map((t) => (
                 <button
                   key={t}
                   onClick={() => handleTypeChange(t)}
-                  className={`flex-1 py-2 text-sm font-medium transition-colors capitalize ${
+                  className={`flex-1 py-2.5 text-sm font-semibold transition-all duration-200 capitalize ${
                     form.type === t
                       ? t === "income"
                         ? "bg-emerald-500 text-white"
-                        : "bg-rose-500 text-white"
-                      : "text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700"
+                        : "bg-brand-600 text-white"
+                      : "text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-white/5"
                   }`}
                 >
-                  {t}
+                  {t === "income" ? "Inflow" : "Outflow"}
                 </button>
               ))}
             </div>
@@ -124,26 +129,24 @@ export default function AddTransactionForm({ editingTransaction, onClose }) {
 
           {/* Description */}
           <div>
-            <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5 uppercase tracking-wider">
+            <label className="block text-[10px] font-semibold text-gray-400 dark:text-gray-500 mb-2 uppercase tracking-widest">
               Description
             </label>
             <input
               type="text"
-              placeholder="e.g. Swiggy Order"
+              placeholder="e.g. Payroll Disbursement — Q2"
               value={form.description}
               onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
               className={inputCls("description")}
             />
-            {errors.description && (
-              <p className="text-xs text-rose-500 mt-1">{errors.description}</p>
-            )}
+            {errors.description && <p className="text-xs text-rose-500 mt-1">{errors.description}</p>}
           </div>
 
           {/* Amount + Date row */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5 uppercase tracking-wider">
-                Amount (₹)
+              <label className="block text-[10px] font-semibold text-gray-400 dark:text-gray-500 mb-2 uppercase tracking-widest">
+                Amount (USD)
               </label>
               <input
                 type="number"
@@ -153,12 +156,10 @@ export default function AddTransactionForm({ editingTransaction, onClose }) {
                 onChange={(e) => setForm((f) => ({ ...f, amount: e.target.value }))}
                 className={inputCls("amount")}
               />
-              {errors.amount && (
-                <p className="text-xs text-rose-500 mt-1">{errors.amount}</p>
-              )}
+              {errors.amount && <p className="text-xs text-rose-500 mt-1">{errors.amount}</p>}
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5 uppercase tracking-wider">
+              <label className="block text-[10px] font-semibold text-gray-400 dark:text-gray-500 mb-2 uppercase tracking-widest">
                 Date
               </label>
               <input
@@ -167,15 +168,13 @@ export default function AddTransactionForm({ editingTransaction, onClose }) {
                 onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))}
                 className={inputCls("date")}
               />
-              {errors.date && (
-                <p className="text-xs text-rose-500 mt-1">{errors.date}</p>
-              )}
+              {errors.date && <p className="text-xs text-rose-500 mt-1">{errors.date}</p>}
             </div>
           </div>
 
           {/* Category */}
           <div>
-            <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5 uppercase tracking-wider">
+            <label className="block text-[10px] font-semibold text-gray-400 dark:text-gray-500 mb-2 uppercase tracking-widest">
               Category
             </label>
             <select
@@ -191,18 +190,16 @@ export default function AddTransactionForm({ editingTransaction, onClose }) {
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex gap-3 justify-end">
+        <div className="px-6 py-4 border-t border-gray-100 dark:border-white/5 flex gap-3 justify-end">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-sm font-medium rounded-lg border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+            className="px-4 py-2 text-sm font-medium rounded-xl border border-gray-200 dark:border-white/10
+                       text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
           >
             Cancel
           </button>
-          <button
-            onClick={handleSubmit}
-            className="px-5 py-2 text-sm font-semibold rounded-lg bg-brand-600 hover:bg-brand-700 text-white transition-colors shadow-sm"
-          >
-            {isEdit ? "Save Changes" : "Add Transaction"}
+          <button onClick={handleSubmit} className="btn-primary px-5">
+            {isEdit ? "Save Changes" : "Record Payment"}
           </button>
         </div>
       </div>

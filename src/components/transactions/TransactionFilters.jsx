@@ -14,17 +14,17 @@ export default function TransactionFilters() {
     filters.category !== "All" || filters.type !== "All" || filters.search !== "";
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-4">
+    <div className="bg-white dark:bg-surface-800 rounded-2xl border border-gray-100 dark:border-white/5 shadow-card p-4">
       <div className="flex flex-wrap gap-3 items-center">
         {/* Search */}
         <div className="relative flex-1 min-w-[180px]">
-          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
           <input
             type="text"
-            placeholder="Search transactions…"
+            placeholder="Search payment records…"
             value={filters.search}
             onChange={(e) => setFilter("search", e.target.value)}
-            className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-200 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+            className="form-input pl-9"
           />
         </div>
 
@@ -32,7 +32,7 @@ export default function TransactionFilters() {
         <select
           value={filters.category}
           onChange={(e) => setFilter("category", e.target.value)}
-          className="text-sm rounded-lg border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-500"
+          className="form-input w-auto"
         >
           {CATEGORIES.map((c) => (
             <option key={c}>{c}</option>
@@ -43,28 +43,28 @@ export default function TransactionFilters() {
         <select
           value={filters.type}
           onChange={(e) => setFilter("type", e.target.value)}
-          className="text-sm rounded-lg border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-500"
+          className="form-input w-auto"
         >
-          <option value="All">All Types</option>
-          <option value="income">Income</option>
-          <option value="expense">Expense</option>
+          <option value="All">All Directions</option>
+          <option value="income">Inflow</option>
+          <option value="expense">Outflow</option>
         </select>
 
         {/* Sort */}
         <div className="flex items-center gap-1.5">
-          <SlidersHorizontal size={14} className="text-gray-400" />
+          <SlidersHorizontal size={13} className="text-gray-400" />
           <select
             value={`${sort.field}-${sort.order}`}
             onChange={(e) => {
               const [field, order] = e.target.value.split("-");
               dispatch({ type: "SET_SORT", payload: { field, order } });
             }}
-            className="text-sm rounded-lg border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-500"
+            className="form-input w-auto"
           >
             <option value="date-desc">Date: Newest</option>
             <option value="date-asc">Date: Oldest</option>
-            <option value="amount-desc">Amount: High→Low</option>
-            <option value="amount-asc">Amount: Low→High</option>
+            <option value="amount-desc">Amount: High → Low</option>
+            <option value="amount-asc">Amount: Low → High</option>
           </select>
         </div>
 
@@ -72,9 +72,11 @@ export default function TransactionFilters() {
         {hasActiveFilters && (
           <button
             onClick={() => dispatch({ type: "RESET_FILTERS" })}
-            className="flex items-center gap-1 text-xs text-rose-500 hover:text-rose-700 dark:text-rose-400 transition-colors px-2 py-2"
+            className="flex items-center gap-1 text-xs text-rose-500 hover:text-rose-600 dark:text-rose-400
+                       transition-colors px-2 py-2"
           >
-            <X size={13} /> Clear
+            <X size={12} />
+            Clear
           </button>
         )}
       </div>

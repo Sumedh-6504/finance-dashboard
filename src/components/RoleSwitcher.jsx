@@ -7,21 +7,21 @@ export default function RoleSwitcher() {
   const { role } = state;
 
   return (
-    <div className="flex items-center gap-2 bg-gray-100 dark:bg-gray-700 rounded-xl p-1">
+    <div className="flex items-center gap-1 bg-gray-100 dark:bg-white/5 rounded-xl p-1">
       {[
-        { value: "viewer", label: "Viewer", Icon: Eye },
-        { value: "admin", label: "Admin", Icon: ShieldCheck },
+        { value: "viewer", label: "Viewer", Icon: Eye         },
+        { value: "admin",  label: "Admin",  Icon: ShieldCheck },
       ].map(({ value, label, Icon }) => (
         <button
           key={value}
           onClick={() => dispatch({ type: "SET_ROLE", payload: value })}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+          className={`tab-btn ${
             role === value
-              ? "bg-white dark:bg-gray-600 text-gray-700 dark:text-gray-200 shadow-sm"
+              ? "bg-white dark:bg-surface-800 text-gray-800 dark:text-gray-100 shadow-sm"
               : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
           }`}
         >
-          <Icon size={13} />
+          <Icon size={12} />
           {label}
         </button>
       ))}

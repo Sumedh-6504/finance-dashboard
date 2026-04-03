@@ -8,46 +8,56 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
+  ReferenceLine,
 } from "recharts";
 import { useApp } from "../../context/AppContext";
+import { TrendingUp } from "lucide-react";
 
-function formatShortINR(value) {
-  if (value >= 100000) return `₹${(value / 100000).toFixed(1)}L`;
-  if (value >= 1000) return `₹${(value / 1000).toFixed(0)}K`;
-  return `₹${value}`;
+function formatShortUSD(value) {
+  if (value >= 1_000_000) return `$${(value / 1_000_000).toFixed(1)}M`;
+  if (value >= 1_000) return `$${(value / 1_000).toFixed(0)}K`;
+  return `$${value}`;
 }
 
-const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+function formatUSD(amount) {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    maximumFractionDigits: 0,
+  }).format(amount);
+}
+
+const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 
 export default function BalanceChart() {
   const { state } = useApp();
   const { transactions } = state;
 
-  // Aggregate by month
   const monthlyData = {};
-
   transactions.forEach((t) => {
     const d = new Date(t.date);
     const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-    const label = `${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
+    const label = `${MONTHS[d.getMonth()]} '${String(d.getFullYear()).slice(2)}`;
     if (!monthlyData[key]) {
-      monthlyData[key] = { key, label, income: 0, expenses: 0 };
+      monthlyData[key] = { key, label, revenue: 0, outflow: 0 };
     }
-    if (t.type === "income") monthlyData[key].income += t.amount;
-    else monthlyData[key].expenses += t.amount;
+    if (t.type === "income") monthlyData[key].revenue += t.amount;
+    else monthlyData[key].outflow += t.amount;
   });
 
   const chartData = Object.values(monthlyData)
     .sort((a, b) => a.key.localeCompare(b.key))
-    .map((m) => ({
-      ...m,
-      balance: m.income - m.expenses,
-    }));
+    .map((m) => ({ ...m, net: m.revenue - m.outflow }));
+
+  // Average outflow as budget reference
+  const avgOutflow = chartData.length
+    ? Math.round(chartData.reduce((s, m) => s + m.outflow, 0) / chartData.length)
+    : 0;
 
   if (chartData.length === 0) {
     return (
-      <div className="flex items-center justify-center h-48 text-gray-400 dark:text-gray-500 text-sm">
-        No data to display
+      <div className="section-card flex items-center justify-center h-64 text-gray-400 text-sm">
+        No payment data to display
       </div>
     );
   }
@@ -55,12 +65,16 @@ export default function BalanceChart() {
   const CustomTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
       return (
-        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3 shadow-lg text-sm">
+        <div className="bg-white dark:bg-surface-800 border border-gray-100 dark:border-white/10 rounded-xl p-3 shadow-xl text-xs">
           <p className="font-semibold text-gray-700 dark:text-gray-200 mb-2">{label}</p>
           {payload.map((p) => (
-            <p key={p.name} style={{ color: p.color }} className="font-mono">
-              {p.name}: {formatShortINR(p.value)}
-            </p>
+            <div key={p.name} className="flex items-center gap-2 mb-1">
+              <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: p.color }} />
+              <span className="text-gray-500 dark:text-gray-400 capitalize">{p.name}:</span>
+              <span className="font-mono font-semibold" style={{ color: p.color }}>
+                {formatUSD(p.value)}
+              </span>
+            </div>
           ))}
         </div>
       );
@@ -69,53 +83,77 @@ export default function BalanceChart() {
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-5">
-      <h3 className="font-semibold text-gray-700 dark:text-gray-200 mb-4">Monthly Overview</h3>
+    <div className="section-card">
+      <div className="flex items-center justify-between mb-5">
+        <div>
+          <h3 className="font-semibold text-gray-800 dark:text-gray-100">Payment Flow</h3>
+          <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">
+            Monthly revenue vs. outflow
+          </p>
+        </div>
+        <div className="flex items-center gap-1.5 bg-brand-50 dark:bg-brand-900/20 px-3 py-1.5 rounded-xl">
+          <TrendingUp size={13} className="text-brand-600 dark:text-brand-400" />
+          <span className="text-xs font-semibold text-brand-700 dark:text-brand-300">Live</span>
+        </div>
+      </div>
+
       <ResponsiveContainer width="100%" height={240}>
-        <AreaChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
+        <AreaChart data={chartData} margin={{ top: 5, right: 5, left: 0, bottom: 0 }}>
           <defs>
-            <linearGradient id="colorIncome" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#14b8a6" stopOpacity={0.2} />
-              <stop offset="95%" stopColor="#14b8a6" stopOpacity={0} />
+            <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%"  stopColor="#6366f1" stopOpacity={0.25} />
+              <stop offset="95%" stopColor="#6366f1" stopOpacity={0.02} />
             </linearGradient>
-            <linearGradient id="colorExpenses" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#f43f5e" stopOpacity={0.2} />
-              <stop offset="95%" stopColor="#f43f5e" stopOpacity={0} />
+            <linearGradient id="colorOutflow" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%"  stopColor="#f43f5e" stopOpacity={0.2} />
+              <stop offset="95%" stopColor="#f43f5e" stopOpacity={0.02} />
             </linearGradient>
           </defs>
-          <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" className="dark:stroke-gray-700" />
+          <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.15)" vertical={false} />
           <XAxis
             dataKey="label"
-            tick={{ fontSize: 11, fill: "#9ca3af" }}
+            tick={{ fontSize: 11, fill: "#94a3b8", fontFamily: "JetBrains Mono" }}
             axisLine={false}
             tickLine={false}
           />
           <YAxis
-            tickFormatter={formatShortINR}
-            tick={{ fontSize: 11, fill: "#9ca3af" }}
+            tickFormatter={formatShortUSD}
+            tick={{ fontSize: 11, fill: "#94a3b8", fontFamily: "JetBrains Mono" }}
             axisLine={false}
             tickLine={false}
+            width={56}
           />
           <Tooltip content={<CustomTooltip />} />
+          <ReferenceLine
+            y={avgOutflow}
+            stroke="#f59e0b"
+            strokeDasharray="4 4"
+            strokeWidth={1.5}
+            label={{ value: "Avg", fill: "#f59e0b", fontSize: 10, position: "insideTopRight" }}
+          />
           <Legend
-            wrapperStyle={{ fontSize: "12px", paddingTop: "12px" }}
-            formatter={(value) => <span className="text-gray-600 dark:text-gray-300 capitalize">{value}</span>}
+            wrapperStyle={{ fontSize: "11px", paddingTop: "16px" }}
+            formatter={(value) => (
+              <span className="text-gray-500 dark:text-gray-400 capitalize text-xs">{value}</span>
+            )}
           />
           <Area
             type="monotone"
-            dataKey="income"
-            stroke="#14b8a6"
-            strokeWidth={2}
-            fill="url(#colorIncome)"
-            dot={{ r: 3, fill: "#14b8a6" }}
+            dataKey="revenue"
+            stroke="#6366f1"
+            strokeWidth={2.5}
+            fill="url(#colorRevenue)"
+            dot={{ r: 3.5, fill: "#6366f1", strokeWidth: 0 }}
+            activeDot={{ r: 5, fill: "#4f46e5" }}
           />
           <Area
             type="monotone"
-            dataKey="expenses"
+            dataKey="outflow"
             stroke="#f43f5e"
-            strokeWidth={2}
-            fill="url(#colorExpenses)"
-            dot={{ r: 3, fill: "#f43f5e" }}
+            strokeWidth={2.5}
+            fill="url(#colorOutflow)"
+            dot={{ r: 3.5, fill: "#f43f5e", strokeWidth: 0 }}
+            activeDot={{ r: 5, fill: "#e11d48" }}
           />
         </AreaChart>
       </ResponsiveContainer>

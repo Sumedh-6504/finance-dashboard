@@ -77,7 +77,7 @@ export function AppProvider({ children }) {
   // Load persisted state from localStorage if available
   const saved = (() => {
     try {
-      const raw = localStorage.getItem("fintrack_state");
+      const raw = localStorage.getItem("nexvault_state");
       if (raw) {
         const parsed = JSON.parse(raw);
         return { ...initialState, transactions: parsed.transactions, darkMode: parsed.darkMode };
@@ -91,7 +91,7 @@ export function AppProvider({ children }) {
   // Persist transactions and darkMode to localStorage
   useEffect(() => {
     localStorage.setItem(
-      "fintrack_state",
+      "nexvault_state",
       JSON.stringify({ transactions: state.transactions, darkMode: state.darkMode })
     );
   }, [state.transactions, state.darkMode]);
